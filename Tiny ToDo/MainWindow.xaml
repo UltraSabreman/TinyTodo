@@ -11,7 +11,7 @@
 	</Window.Resources>
 
 	<Grid>
-		<ListView x:Name="List" MouseRightButtonUp="List_MouseRightButtonUp" MouseDoubleClick="List_MouseDoubleClick" KeyDown="List_KeyDown" KeyUp="List_KeyUp" HorizontalAlignment="Stretch" Margin="10,10,10,35"  ItemsSource="{Binding ItemList}" Width="Auto">
+		<ListView x:Name="List" SelectedIndex="{Binding Selected}" MouseRightButtonUp="List_MouseRightButtonUp" MouseDoubleClick="List_MouseDoubleClick" KeyDown="List_KeyDown" KeyUp="List_KeyUp" HorizontalAlignment="Stretch" Margin="10,10,10,35"  ItemsSource="{Binding ItemList}" Width="Auto">
 			<ListView.ItemContainerStyle>
 				<Style>
 					<Setter Property="ListViewItem.Margin" Value="0,0,0,0"/>

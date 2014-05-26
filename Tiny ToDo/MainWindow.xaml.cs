@@ -155,7 +155,7 @@ namespace Tiny_ToDo {
 				pos++;
 
 			if (pos >= 0)
-				List.SelectedIndex = pos;
+				Model.Selected = pos;
 
 			Model.ItemList.Remove(r);
 			WriteFile();
@@ -164,13 +164,13 @@ namespace Tiny_ToDo {
 		private void AddItem() {
 			Model.ItemList.Add(new Item() { ItemName = "New Item" });
 
-			List.SelectedIndex = Model.ItemList.Count - 1;
+			Model.Selected = Model.ItemList.Count - 1;
 			WriteFile();
 		}
 
 		private void EditItem() {
 			ItemContainerGenerator generator = List.ItemContainerGenerator;
-			ListViewItem selectedItem = (ListViewItem)generator.ContainerFromIndex(List.SelectedIndex);
+			ListViewItem selectedItem = (ListViewItem)generator.ContainerFromIndex(Model.Selected);
 			TextBox tbFind = GetDescendantByType(selectedItem, typeof(TextBox), "ItemBox") as TextBox;
 			if (tbFind != null) {
 				tbFind.Focus();
@@ -204,9 +204,33 @@ namespace Tiny_ToDo {
 					EditItem();
 				break;
 
-				case Key.N:
+				case Key.A:
 					AddItem();
 					EditItem();
+				break;
+
+				case Key.Space:
+					item.IsDone = !item.IsDone;
+				break;
+
+				case Key.NumPad0:
+				case Key.D0:
+					item.Priority = Item.PriorityState.Normal;
+				break;
+
+				case Key.NumPad1:
+				case Key.D1:
+					item.Priority = Item.PriorityState.Low;
+				break;
+
+				case Key.NumPad2:
+				case Key.D2:
+					item.Priority = Item.PriorityState.Medium;
+				break;
+
+				case Key.NumPad3:
+				case Key.D3:
+					item.Priority = Item.PriorityState.High;
 				break;
 
 				case Key.Up:
@@ -215,6 +239,7 @@ namespace Tiny_ToDo {
 						Item temp = Model.ItemList[newPos];
 						Model.ItemList[newPos] = item;
 						Model.ItemList[index] = temp;
+						Model.Selected = newPos;
 						//List.SelectedIndex = newPos;
 					}
 				break;
@@ -225,10 +250,13 @@ namespace Tiny_ToDo {
 						Item temp = Model.ItemList [newPos];
 						Model.ItemList [newPos] = item;
 						Model.ItemList [index] = temp;
+						Model.Selected = newPos;
+
 						//List.SelectedIndex = newPos;
 					}
 				break;
 			}
+			WriteFile();
 		}
 
 		private void List_KeyDown(object sender, KeyEventArgs e) {

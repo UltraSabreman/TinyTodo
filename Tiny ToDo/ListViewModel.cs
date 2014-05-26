@@ -19,8 +19,12 @@ namespace Tiny_ToDo {
 	}
 
 	public class ListViewModel : PropChange {
-		public ObservableCollection<Item> itemList;
+		private ObservableCollection<Item> itemList;
 		public ObservableCollection<Item> ItemList { get { return itemList; } set { itemList = value; OnPorpertyChanged("ItemList"); } }
 
+
+		private int selected;
+		public int Selected { get { return selected; } set { selected = value; OnPorpertyChanged("Selected"); } }
+		
 	}
 }
