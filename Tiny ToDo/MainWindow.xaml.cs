@@ -17,6 +17,7 @@ using System.ComponentModel;
 using System.Globalization;
 using System.Threading;
 using System.IO;
+using System.Windows.Threading;
 
 namespace Tiny_ToDo {
 	/// <summary>
@@ -25,12 +26,13 @@ namespace Tiny_ToDo {
 	public partial class MainWindow : Window {
 		ListViewModel Model = new ListViewModel();
 		String filePath = "todolist.txt";
-
+		bool shiftHeld = false;
+		bool editing = false;
 
 		public MainWindow() {
 			InitializeComponent();
 			ObservableCollection<Item> ItemList = new ObservableCollection<Item>();
-			
+
 			List.DataContext = Model;
 			Model.ItemList = ItemList;
 
@@ -58,9 +60,11 @@ namespace Tiny_ToDo {
 		}
 
 		public void WriteFile() {
+			File.Delete(filePath);
+
 			using (StreamWriter r = new StreamWriter(File.OpenWrite(filePath))) {
 				foreach (Item i in Model.ItemList) {
-					r.WriteLine(i.ItemName.Replace("|", "&SEP&") + "|" + i.IsDone.ToString() + "|" + ((int)i.Priority).ToString());
+					r.WriteLine(i.ItemName.Replace("|", "&SEP&") + "|" + i.IsDone.ToString() + "|" + ((int)i.Priority).ToString().Trim());
 				}
 			}
 		}
@@ -72,15 +76,27 @@ namespace Tiny_ToDo {
 
 			System.Windows.Controls.ContextMenu menu = new ContextMenu();
 
+			MenuItem clear = new MenuItem() { Header = "Remove Finished" };
+			clear.Click += (o, a) => {
+				List<Item> toRemove = new List<Item>();
+				foreach (Item i in List.Items)
+					if (i.IsDone)
+						toRemove.Add(i);
+
+				toRemove.ForEach(X => List.Items.Remove(X));
+			};
+			menu.Items.Add(clear);
+			menu.Items.Add(new Separator());
+
 			MenuItem d = new MenuItem() { Header = "Delete Item" };
 			d.Click += (o, a) => {
 				RemoveItem(item);
 			};
 
 			menu.Items.Add(d);
-			MenuItem p = new MenuItem() { Header = "Set Priority"};
+			MenuItem p = new MenuItem() { Header = "Set Priority" };
 
-			MenuItem n = new MenuItem() { Header = "Normal", IsChecked = (item.Priority == Item.PriorityState.Normal)};
+			MenuItem n = new MenuItem() { Header = "Normal", IsChecked = (item.Priority == Item.PriorityState.Normal) };
 			n.Click += (o, a) => {
 				item.Priority = Item.PriorityState.Normal;
 			};
@@ -113,12 +129,19 @@ namespace Tiny_ToDo {
 			if (e.Key == Key.Enter) {
 				box.Focusable = false;
 			}
-				
+
 		}
 
 		private void TextBox_LostFocus(object sender, RoutedEventArgs e) {
+			editing = false;
 			(sender as TextBox).Focusable = true;
+			WriteFile();
 		}
+
+		private void ItemBox_GotFocus(object sender, RoutedEventArgs e) {
+			editing = true;
+		}
+
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
 			AddItem();
@@ -135,20 +158,116 @@ namespace Tiny_ToDo {
 				List.SelectedIndex = pos;
 
 			Model.ItemList.Remove(r);
+			WriteFile();
 		}
 
 		private void AddItem() {
 			Model.ItemList.Add(new Item() { ItemName = "New Item" });
 
 			List.SelectedIndex = Model.ItemList.Count - 1;
+			WriteFile();
+		}
+
+		private void EditItem() {
+			ItemContainerGenerator generator = List.ItemContainerGenerator;
+			ListViewItem selectedItem = (ListViewItem)generator.ContainerFromIndex(List.SelectedIndex);
+			TextBox tbFind = GetDescendantByType(selectedItem, typeof(TextBox), "ItemBox") as TextBox;
+			if (tbFind != null) {
+				tbFind.Focus();
+				tbFind.SelectAll();
+				editing = true;
+				WriteFile();
+			}
 		}
 
 		private void Window_Closed(object sender, EventArgs e) {
 			WriteFile();
 		}
 
+		private void List_KeyUp(object sender, KeyEventArgs e) {
+			Item item = ((ListView)sender).SelectedItem as Item;
+			int index = Model.ItemList.IndexOf(item);
+
+			if (e.Key == Key.LeftShift || e.Key == Key.RightShift) {
+				shiftHeld = false;
+				return;
+			}
+
+			if (editing) return;
+			switch(e.Key) {
+				case Key.Delete:
+				case Key.D:
+					RemoveItem(item);
+				break;
+
+				case Key.E:
+					EditItem();
+				break;
+
+				case Key.N:
+					AddItem();
+					EditItem();
+				break;
+
+				case Key.Up:
+					if (shiftHeld && index != -1) {
+						int newPos = (index - 1 >= 0 ? index - 1 : (Model.ItemList.Count - 1));
+						Item temp = Model.ItemList[newPos];
+						Model.ItemList[newPos] = item;
+						Model.ItemList[index] = temp;
+						//List.SelectedIndex = newPos;
+					}
+				break;
+
+				case Key.Down:
+					if (shiftHeld && index != -1) {
+						int newPos = (index + 1 < (Model.ItemList.Count - 1) ? index + 1 : 0);
+						Item temp = Model.ItemList [newPos];
+						Model.ItemList [newPos] = item;
+						Model.ItemList [index] = temp;
+						//List.SelectedIndex = newPos;
+					}
+				break;
+			}
+		}
+
+		private void List_KeyDown(object sender, KeyEventArgs e) {
+			if (e.Key == Key.LeftShift || e.Key == Key.RightShift)
+				shiftHeld = true;
+		}
+		//found here:
+		//http://social.msdn.microsoft.com/Forums/vstudio/en-US/1e9a98c3-b4be-40af-99bd-828491ddcd69/set-focus-of-textbox-in-listview?forum=wpf
+		public static Visual GetDescendantByType(Visual element, Type type, string name) {
+			if (element == null) return null;
+			if (element.GetType() == type) {
+				FrameworkElement fe = element as FrameworkElement;
+				if (fe != null && fe.Name == name) {
+					return fe;
+				}
+			}
+
+			Visual foundElement = null;
+			if (element is FrameworkElement)
+				(element as FrameworkElement).ApplyTemplate();
+
+			for (int i = 0; i < VisualTreeHelper.GetChildrenCount(element); i++) {
+				Visual visual = VisualTreeHelper.GetChild(element, i) as Visual;
+				foundElement = GetDescendantByType(visual, type, name);
+
+				if (foundElement != null)
+					break;
+			}
+			return foundElement;
+		}
+
+		private void List_MouseDoubleClick(object sender, MouseButtonEventArgs e) {
+			EditItem();
+		}
+
+		private void testChecker_Checked(object sender, RoutedEventArgs e) {
+			WriteFile();
+		}
+
 	}
-
-
 
 }

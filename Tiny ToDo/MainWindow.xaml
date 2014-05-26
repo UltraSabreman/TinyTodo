@@ -11,7 +11,7 @@
 	</Window.Resources>
 
 	<Grid>
-		<ListView x:Name="List" MouseRightButtonUp="List_MouseRightButtonUp" HorizontalAlignment="Stretch" Margin="10,10,10,35"  ItemsSource="{Binding ItemList}" Width="Auto">
+		<ListView x:Name="List" MouseRightButtonUp="List_MouseRightButtonUp" MouseDoubleClick="List_MouseDoubleClick" KeyDown="List_KeyDown" KeyUp="List_KeyUp" HorizontalAlignment="Stretch" Margin="10,10,10,35"  ItemsSource="{Binding ItemList}" Width="Auto">
 			<ListView.ItemContainerStyle>
 				<Style>
 					<Setter Property="ListViewItem.Margin" Value="0,0,0,0"/>
@@ -24,7 +24,7 @@
 					<GridViewColumn Header="X" Width="30" >
 						<GridViewColumn.CellTemplate >
 							<DataTemplate>
-								<CheckBox IsChecked="{Binding IsDone}"/>
+								<CheckBox Name="testChecker" Checked="testChecker_Checked" IsChecked="{Binding IsDone}"/>
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
 					</GridViewColumn>
@@ -33,9 +33,32 @@
 						<GridViewColumn.CellTemplate>
 							<DataTemplate>
 								<TextBox HorizontalAlignment="Stretch" Width="{Binding ElementName=Test, Path=Width}"  
-										 Foreground="{Binding Priority, Converter={StaticResource Foreground}}" Background="Transparent" 
+										 Background="Transparent" Name="ItemBox" GotFocus="ItemBox_GotFocus"
 										 BorderBrush="Transparent" Text="{Binding ItemName, Mode=TwoWay}" FontSize="12" Margin="0,0,0,0" KeyUp="TextBox_KeyUp"
-										 LostFocus="TextBox_LostFocus"/>
+										 LostFocus="TextBox_LostFocus">
+									<TextBox.Style>
+										<Style>
+											<Setter Property="TextBlock.Foreground" Value="{Binding Priority, Converter={StaticResource Foreground}}"/>
+
+											<Style.Triggers>
+												<DataTrigger Binding="{Binding IsDone}" Value="True">
+													<Setter Property="TextBlock.Foreground" Value="Gray"/>
+													<Setter Property="TextBlock.TextDecorations">
+														<Setter.Value>
+															<TextDecorationCollection>
+																<TextDecoration Location="Strikethrough">
+																	<TextDecoration.Pen>
+																		<Pen Brush="Gray" />
+																	</TextDecoration.Pen>
+																</TextDecoration>
+															</TextDecorationCollection>
+														</Setter.Value>
+													</Setter>	
+												</DataTrigger>
+											</Style.Triggers>
+										</Style>
+									</TextBox.Style>
+								</TextBox>
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
 					</GridViewColumn>
