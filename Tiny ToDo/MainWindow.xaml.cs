@@ -145,6 +145,7 @@ namespace Tiny_ToDo {
 
 		private void Button_Click(object sender, RoutedEventArgs e) {
 			AddItem();
+			EditItem();
 		}
 
 		private void RemoveItem(Item r) {
@@ -246,7 +247,7 @@ namespace Tiny_ToDo {
 
 				case Key.Down:
 					if (shiftHeld && index != -1) {
-						int newPos = (index + 1 < (Model.ItemList.Count - 1) ? index + 1 : 0);
+						int newPos = (index + 1 < Model.ItemList.Count ? index + 1 : 0);
 						Item temp = Model.ItemList [newPos];
 						Model.ItemList [newPos] = item;
 						Model.ItemList [index] = temp;
